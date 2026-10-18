@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Serverless task management backend
+
+Globals:
+  Function:
+    Runtime: nodejs20.x
+    Timeout: 10
+    MemorySize: 128
+    Environment:
+      Variables:
+        TASKS_TABLE: !Ref TasksTable
+  HttpApi:
+    CorsConfiguration:
+      AllowOrigins:
+        - "*"
+      AllowHeaders:
+        - "Content-Type"
+      AllowMethods:
+        - GET
+        - POST
+        - PUT
+        - DELETE
+
+Resources:
+  # タスクテーブルの定義
+  TasksTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName: tasks
+      BillingMode: PAY_PER_REQUEST
+      AttributeDefinitions:
+        - AttributeName: id
+          AttributeType: S
+      KeySchema:
+        - AttributeName: id
+          KeyType: HASH
+
+  ListTasksFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/handlers/listTasks.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        ListTasks:
+          Type: HttpApi
+          Properties:
+            Path: /tasks
+            Method: GET
+
+  CreateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/handlers/createTask.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        CreateTask:
+          Type: HttpApi
+          Properties:
+            Path: /tasks
+            Method: POST
+
+  GetTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/handlers/getTask.handler
+      Policies:
+        - DynamoDBReadPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        GetTask:
+          Type: HttpApi
+          Properties:
+            Path: /tasks/{id}
+            Method: GET
+
+  UpdateTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/handlers/updateTask.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        UpdateTask:
+          Type: HttpApi
+          Properties:
+            Path: /tasks/{id}
+            Method: PUT
+
+  DeleteTaskFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: dist/handlers/deleteTask.handler
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref TasksTable
+      Events:
+        DeleteTask:
+          Type: HttpApi
+          Properties:
+            Path: /tasks/{id}
+            Method: DELETE
+
+Outputs:
+  ApiUrl:
+    Description: "API base URL"
+    Value: !Sub "https://${ServerlessHttpApi}.execute-api.${AWS::Region}.amazonaws.com"

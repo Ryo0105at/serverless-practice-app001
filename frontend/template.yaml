@@ -1,0 +1,71 @@
+AWSTemplateFormatVersion: "2010-09-09"
+Transform: AWS::Serverless-2016-10-31
+Description: Frontend hosting (S3 + CloudFront) for task management app
+
+Resources:
+  # フロントの静的ファイルを置くS3バケット。直接公開せず、CloudFront経由でのみ配信する
+  FrontendBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      BucketName: !Sub "practice001-frontend-${AWS::AccountId}"
+
+  # CloudFrontだけがS3を読めるようにするアクセス制御(Origin Access Control)
+  FrontendOAC:
+    Type: AWS::CloudFront::OriginAccessControl
+    Properties:
+      OriginAccessControlConfig:
+        Name: !Sub "practice001-frontend-oac-${AWS::AccountId}"
+        OriginAccessControlOriginType: s3
+        SigningBehavior: always
+        SigningProtocol: sigv4
+
+  FrontendDistribution:
+    Type: AWS::CloudFront::Distribution
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        DefaultRootObject: index.html
+        Origins:
+          - Id: S3Origin
+            DomainName: !GetAtt FrontendBucket.RegionalDomainName
+            OriginAccessControlId: !GetAtt FrontendOAC.Id
+            S3OriginConfig:
+              OriginAccessIdentity: ""
+        DefaultCacheBehavior:
+          TargetOriginId: S3Origin
+          ViewerProtocolPolicy: redirect-to-https
+          # AWS管理のキャッシュポリシー(CachingOptimized)を使う
+          CachePolicyId: 658327ea-f89d-4fab-a63d-7e88639e58f6
+        # SPAなので、存在しないパスへのアクセスもindex.htmlに返す(React側でルーティング)
+        CustomErrorResponses:
+          - ErrorCode: 403
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+          - ErrorCode: 404
+            ResponseCode: 200
+            ResponsePagePath: /index.html
+
+  # CloudFrontからのアクセスだけS3読み取りを許可するバケットポリシー
+  FrontendBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref FrontendBucket
+      PolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: cloudfront.amazonaws.com
+            Action: "s3:GetObject"
+            Resource: !Sub "${FrontendBucket.Arn}/*"
+            Condition:
+              StringEquals:
+                AWS:SourceArn: !Sub "arn:aws:cloudfront::${AWS::AccountId}:distribution/${FrontendDistribution.Id}"
+
+Outputs:
+  BucketName:
+    Description: "S3 bucket name for uploading frontend files"
+    Value: !Ref FrontendBucket
+  DistributionUrl:
+    Description: "Frontend URL (CloudFront)"
+    Value: !Sub "https://${FrontendDistribution.DomainName}"
