@@ -1,3 +1,4 @@
+// APIのベースURLを環境変数から取得し、存在しない場合はデフォルト値を使用
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ?? "http://127.0.0.1:3000";
 
@@ -7,6 +8,7 @@ export interface Task {
   completed: boolean;
 }
 
+// 共通のリクエスト関数を定義
 const request = async (
   path: string,
   options?: RequestInit,

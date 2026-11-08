@@ -1,7 +1,10 @@
+// HTTPレスポンスを返すためのユーティリティ関数を定義するモジュール
+
 import type { APIGatewayProxyResultV2 } from "aws-lambda";
 
 export const JSON_HEADERS = { "Content-Type": "application/json" };
 
+// 成功レスポンスを返す関数
 export const successResponse = (
   statusCode: number,
   data: unknown,
@@ -11,6 +14,7 @@ export const successResponse = (
   body: JSON.stringify(data),
 });
 
+// エラーレスポンスを返す関数
 export const errorResponse = (
   statusCode: number,
   message: string,
@@ -20,6 +24,7 @@ export const errorResponse = (
   body: JSON.stringify({ message }),
 });
 
+// DynamoDBのConditionalCheckFailedExceptionエラーかどうかを判定する関数
 export const isConditionalCheckFailed = (error: unknown): boolean =>
   typeof error === "object" &&
   error !== null &&
