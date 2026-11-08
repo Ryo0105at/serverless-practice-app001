@@ -34,3 +34,37 @@ jobs:
 
       # esbuild でビルド
       - run: npm run build
+
+  deploy:
+    # build ジョブが成功したときだけ実行
+    needs: build
+    # main への push のときだけデプロイ（pull_request では実行しない）
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      # SAM CLI をセットアップ（AWS 公式アクション）
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
+      - run: npm ci
+      - run: npm run build
+
+      # sam deploy を非対話モードで実行
+      - name: Deploy with SAM
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: ap-northeast-1
+        run: sam deploy --no-confirm-changeset --no-fail-on-empty-changeset
