@@ -1,0 +1,36 @@
+name: backend-ci
+
+# トリガー（いつ実行するか）
+on:
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+  pull_request:
+    branches: [main]
+    paths:
+      - "backend/**"
+
+# ジョブの定義（実行する内容）
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      # TypeScript の型チェック（tsc --noEmit で型だけ確認）
+      - run: npx tsc --noEmit
+
+      # esbuild でビルド
+      - run: npm run build

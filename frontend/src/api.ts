@@ -7,25 +7,30 @@ export interface Task {
   completed: boolean;
 }
 
+const request = async (
+  path: string,
+  options?: RequestInit,
+): Promise<Response> => {
+  const response = await fetch(`${API_BASE_URL}${path}`, options);
+  if (!response.ok) {
+    throw new Error(`Request failed: ${response.status}`);
+  }
+  return response;
+};
+
 // 一覧取得
 export const fetchTasks = async (): Promise<Task[]> => {
-  const response = await fetch(`${API_BASE_URL}/tasks`);
-  if (!response.ok) {
-    throw new Error("Failed to fetch tasks");
-  }
+  const response = await request(`/tasks`);
   return response.json();
 };
 
 // 新規作成
 export const createTask = async (title: string): Promise<Task> => {
-  const response = await fetch(`${API_BASE_URL}/tasks`, {
+  const response = await request(`/tasks`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ title }),
   });
-  if (!response.ok) {
-    throw new Error("Failed to create task");
-  }
   return response.json();
 };
 
@@ -34,23 +39,15 @@ export const updateTask = async (
   id: string,
   updates: Partial<Pick<Task, "title" | "completed">>,
 ): Promise<Task> => {
-  const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
+  const response = await request(`/tasks/${id}`, {
     method: "PUT",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(updates),
   });
-  if (!response.ok) {
-    throw new Error("Failed to update task");
-  }
   return response.json();
 };
 
 // 削除
 export const deleteTask = async (id: string): Promise<void> => {
-  const response = await fetch(`${API_BASE_URL}/tasks/${id}`, {
-    method: "DELETE",
-  });
-  if (!response.ok) {
-    throw new Error("Failed to delete task");
-  }
+  await request(`/tasks/${id}`, { method: "DELETE" });
 };

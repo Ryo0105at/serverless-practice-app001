@@ -4,6 +4,7 @@ import type {
 } from "aws-lambda";
 import { DeleteCommand } from "@aws-sdk/lib-dynamodb";
 import { documentClient, TASKS_TABLE } from "../dynamodb";
+import { errorResponse, isConditionalCheckFailed } from "../http";
 
 export const handler = async (
   event: APIGatewayProxyEventV2,
@@ -36,18 +37,3 @@ export const handler = async (
 
   return { statusCode: 204, body: "" };
 };
-
-const isConditionalCheckFailed = (error: unknown): boolean =>
-  typeof error === "object" &&
-  error !== null &&
-  "name" in error &&
-  error.name === "ConditionalCheckFailedException";
-
-const errorResponse = (
-  statusCode: number,
-  message: string,
-): APIGatewayProxyResultV2 => ({
-  statusCode,
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message }),
-});

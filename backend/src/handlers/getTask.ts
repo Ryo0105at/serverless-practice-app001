@@ -4,6 +4,7 @@ import type {
 } from "aws-lambda";
 import { GetCommand } from "@aws-sdk/lib-dynamodb";
 import { documentClient, TASKS_TABLE } from "../dynamodb";
+import { successResponse, errorResponse } from "../http";
 
 export const handler = async (
   event: APIGatewayProxyEventV2,
@@ -23,18 +24,5 @@ export const handler = async (
     return errorResponse(404, "Task not found");
   }
 
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(result.Item),
-  };
+  return successResponse(200, result.Item);
 };
-
-const errorResponse = (
-  statusCode: number,
-  message: string,
-): APIGatewayProxyResultV2 => ({
-  statusCode,
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message }),
-});

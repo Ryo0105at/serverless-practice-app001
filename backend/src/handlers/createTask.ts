@@ -5,6 +5,7 @@ import type {
 import { randomUUID } from "node:crypto";
 import { PutCommand } from "@aws-sdk/lib-dynamodb";
 import { documentClient, TASKS_TABLE } from "../dynamodb";
+import { successResponse, errorResponse } from "../http";
 
 interface CreateTaskBody {
   title?: unknown;
@@ -24,6 +25,11 @@ export const handler = async (
     parsed = JSON.parse(event.body);
   } catch {
     return errorResponse(400, "Request body must be valid JSON");
+  }
+
+  // null・数値・配列なども有効なJSONなので、オブジェクトであることを確認
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return errorResponse(400, "Request body must be a JSON object");
   }
 
   // タイトルのバリデーション（文字列かつ空でない）
@@ -46,18 +52,5 @@ export const handler = async (
     new PutCommand({ TableName: TASKS_TABLE, Item: task }),
   );
 
-  return {
-    statusCode: 201,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(task),
-  };
+  return successResponse(201, task);
 };
-
-const errorResponse = (
-  statusCode: number,
-  message: string,
-): APIGatewayProxyResultV2 => ({
-  statusCode,
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message }),
-});

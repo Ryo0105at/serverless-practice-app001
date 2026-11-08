@@ -4,6 +4,11 @@ import type {
 } from "aws-lambda";
 import { UpdateCommand } from "@aws-sdk/lib-dynamodb";
 import { documentClient, TASKS_TABLE } from "../dynamodb";
+import {
+  successResponse,
+  errorResponse,
+  isConditionalCheckFailed,
+} from "../http";
 
 interface UpdateTaskBody {
   title?: unknown;
@@ -29,6 +34,11 @@ export const handler = async (
     parsed = JSON.parse(event.body);
   } catch {
     return errorResponse(400, "Request body must be valid JSON");
+  }
+
+  // null・数値・配列なども有効なJSONなので、オブジェクトであることを確認
+  if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
+    return errorResponse(400, "Request body must be a JSON object");
   }
 
   // 更新するフィールドを収集
@@ -87,24 +97,5 @@ export const handler = async (
     return errorResponse(404, "Task not found");
   }
 
-  return {
-    statusCode: 200,
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(result.Attributes),
-  };
+  return successResponse(200, result.Attributes);
 };
-
-const isConditionalCheckFailed = (error: unknown): boolean =>
-  typeof error === "object" &&
-  error !== null &&
-  "name" in error &&
-  error.name === "ConditionalCheckFailedException";
-
-const errorResponse = (
-  statusCode: number,
-  message: string,
-): APIGatewayProxyResultV2 => ({
-  statusCode,
-  headers: { "Content-Type": "application/json" },
-  body: JSON.stringify({ message }),
-});

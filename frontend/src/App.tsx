@@ -32,7 +32,7 @@ function App() {
     try {
       const created = await createTask(newTitle.trim());
       // APIを再取得せずに、作成したタスクを追加する
-      setTasks([...tasks, created]);
+      setTasks((prev) => [...prev, created]);
       setNewTitle("");
     } catch {
       setError("タスクの作成に失敗しました");
@@ -44,7 +44,7 @@ function App() {
     try {
       const updated = await updateTask(task.id, { completed: !task.completed });
       // APIを再取得せずに、更新したタスクを置き換える
-      setTasks(tasks.map((t) => (t.id === task.id ? updated : t)));
+      setTasks((prev) => prev.map((t) => (t.id === task.id ? updated : t)));
     } catch {
       setError("タスクの更新に失敗しました");
     }
@@ -54,7 +54,7 @@ function App() {
     try {
       await deleteTask(id);
       // APIを再取得せずに、削除したタスクを除外する
-      setTasks(tasks.filter((t) => t.id !== id));
+      setTasks((prev) => prev.filter((t) => t.id !== id));
     } catch {
       setError("タスクの削除に失敗しました");
     }
