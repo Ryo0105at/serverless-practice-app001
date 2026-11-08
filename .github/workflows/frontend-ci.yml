@@ -38,7 +38,8 @@ jobs:
 
       # TypeScript の型チェック＋ビルド
       - run: npm run build
-
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
   deploy:
     # build ジョブが成功したときだけ実行
     needs: build
@@ -59,6 +60,8 @@ jobs:
 
       - run: npm ci
       - run: npm run build
+        env:
+          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
 
       # AWS 認証情報を環境変数として設定（GitHub Secrets から取得）
       - name: Deploy to S3
